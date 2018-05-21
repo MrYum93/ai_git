@@ -4,20 +4,32 @@
 #include <vector>
 #include "ludo_player.h"
 #include "ludo_player_random.h"
+#include "ludo_player_qlearning.h"
 #include "positions_and_dice.h"
 
 Q_DECLARE_METATYPE( positions_and_dice )
 
 int main(int argc, char *argv[]){
+    bool debug = 1;
     QApplication a(argc, argv);
     qRegisterMetaType<positions_and_dice>();
 
     //instanciate the players here
-    ludo_player p1, p2;
-    ludo_player_random p3, p4;
+    //ludo_player p1, p2;
+    ludo_player_qlearning p1;
+    if(debug) cout << "ludo player created"<< endl;
+    ludo_player_random p2, p3, p4;
+    if(debug) cout << "all players created" << endl;
+    ludo_player_qlearning * p1Ptr = &p1;
+    ludo_player_random    * p2Ptr = &p2;
+    ludo_player_random    * p3Ptr = &p3;
+    ludo_player_random    * p4Ptr = &p4;
+    if(debug) cout << "Pointers to players created" << endl;
 
     game g;
     g.setGameDelay(000); //if you want to see the game, set a delay
+    if(debug) cout << "Game start" << endl;
+
 
     //Add a GUI <-- remove the '/' to uncomment block
     Dialog w;
@@ -27,30 +39,15 @@ int main(int argc, char *argv[]){
     QObject::connect(&g,SIGNAL(declare_winner(int)),              &w,SLOT(get_winner()));
     QObject::connect(&g,SIGNAL(close()),&a,SLOT(quit()));
     w.show();
+    if(debug) cout << "Dialog is open" << endl;
     /*/ //Or don't add the GUI
     QObject::connect(&g,SIGNAL(close()),&a,SLOT(quit()));
     //*/
-
-    //set up for each player
-    QObject::connect(&g, SIGNAL(player1_start(positions_and_dice)),&p1,SLOT(start_turn(positions_and_dice)));
-    QObject::connect(&p1,SIGNAL(select_piece(int)),                &g, SLOT(movePiece(int)));
-    QObject::connect(&g, SIGNAL(player1_end(std::vector<int>)),    &p1,SLOT(post_game_analysis(std::vector<int>)));
-    QObject::connect(&p1,SIGNAL(turn_complete(bool)),              &g, SLOT(turnComplete(bool)));
-
-    QObject::connect(&g, SIGNAL(player2_start(positions_and_dice)),&p2,SLOT(start_turn(positions_and_dice)));
-    QObject::connect(&p2,SIGNAL(select_piece(int)),                &g, SLOT(movePiece(int)));
-    QObject::connect(&g, SIGNAL(player2_end(std::vector<int>)),    &p2,SLOT(post_game_analysis(std::vector<int>)));
-    QObject::connect(&p2,SIGNAL(turn_complete(bool)),              &g, SLOT(turnComplete(bool)));
-
-    QObject::connect(&g, SIGNAL(player3_start(positions_and_dice)),&p3,SLOT(start_turn(positions_and_dice)));
-    QObject::connect(&p3,SIGNAL(select_piece(int)),                &g, SLOT(movePiece(int)));
-    QObject::connect(&g, SIGNAL(player3_end(std::vector<int>)),    &p3,SLOT(post_game_analysis(std::vector<int>)));
-    QObject::connect(&p3,SIGNAL(turn_complete(bool)),              &g, SLOT(turnComplete(bool)));
-
-    QObject::connect(&g, SIGNAL(player4_start(positions_and_dice)),&p4,SLOT(start_turn(positions_and_dice)));
-    QObject::connect(&p4,SIGNAL(select_piece(int)),                &g, SLOT(movePiece(int)));
-    QObject::connect(&g, SIGNAL(player4_end(std::vector<int>)),    &p4,SLOT(post_game_analysis(std::vector<int>)));
-    QObject::connect(&p4,SIGNAL(turn_complete(bool)),              &g, SLOT(turnComplete(bool)));
+    g.add_players(p1Ptr, p2Ptr, p3Ptr, p4Ptr);
+    g.init_games();
+    if(debug) cout << "Game is init" << endl;
+    QApplication * aPtr;
+    aPtr = &a;
 
     for(int i = 0; i < 10000; ++i){
         g.start();

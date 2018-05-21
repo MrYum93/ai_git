@@ -1,5 +1,6 @@
 #include "game.h"
 #define DEBUG 0
+bool debug = 1;
 
 game::game():
     game_complete(false),
@@ -12,6 +13,131 @@ game::game():
     color(3),
     player_positions({-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1})
 {
+    if(debug) cout << "Win cnt init\n";
+    winCnt1 = winCnt2 = winCnt3 = winCnt4 = 0;
+    firstInit = true;
+}
+
+void game::init_games()
+{
+    if(debug) cout << "Start with init!" << endl;
+    if(!firstInit)
+    {
+        if(debug) cout << "first init" << endl;
+        QObject::disconnect(this,SIGNAL(player1_start(positions_and_dice)),&(*pp1), SLOT(start_turn(positions_and_dice)));
+        QObject::disconnect(&(*pp1),SIGNAL(select_piece(int)),               this, SLOT(movePiece(int)));
+        QObject::disconnect(this, SIGNAL(player1_end(std::vector<int>)),    &(*pp1),SLOT(post_game_analysis(std::vector<int>)));
+        QObject::disconnect(&(*pp1),SIGNAL(turn_complete(bool)),             this,SLOT(turnComplete(bool)));
+
+        QObject::disconnect(this, SIGNAL(player2_start(positions_and_dice)),&(*pp2),SLOT(start_turn(positions_and_dice)));
+        QObject::disconnect(&(*pp2),SIGNAL(select_piece(int)),                 this, SLOT(movePiece(int)));
+        QObject::disconnect(this, SIGNAL(player2_end(std::vector<int>)),    &(*pp2),SLOT(post_game_analysis(std::vector<int>)));
+        QObject::disconnect(&(*pp2),SIGNAL(turn_complete(bool)),               this, SLOT(turnComplete(bool)));
+
+        QObject::disconnect(this, SIGNAL(player3_start(positions_and_dice)),&(*pp3),SLOT(start_turn(positions_and_dice)));
+        QObject::disconnect(&(*pp3),SIGNAL(select_piece(int)),                 this, SLOT(movePiece(int)));
+        QObject::disconnect(this, SIGNAL(player3_end(std::vector<int>)),    &(*pp3),SLOT(post_game_analysis(std::vector<int>)));
+        QObject::disconnect(&(*pp3),SIGNAL(turn_complete(bool)),               this, SLOT(turnComplete(bool)));
+
+        QObject::disconnect(this, SIGNAL(player4_start(positions_and_dice)),&(*pp4),SLOT(start_turn(positions_and_dice)));
+        QObject::disconnect(&(*pp4),SIGNAL(select_piece(int)),                 this, SLOT(movePiece(int)));
+        QObject::disconnect(this, SIGNAL(player4_end(std::vector<int>)),    &(*pp4),SLOT(post_game_analysis(std::vector<int>)));
+        QObject::disconnect(&(*pp4),SIGNAL(turn_complete(bool)),              this, SLOT(turnComplete(bool)));
+        if(debug) cout << "disconnected" << endl;
+    }
+    if(debug) cout << "Begin to connect" << endl;
+    QObject::connect(this, SIGNAL(player1_start(positions_and_dice)),&(*pp1),SLOT(start_turn(positions_and_dice)));
+    QObject::connect(&(*pp1),SIGNAL(select_piece(int)),                this, SLOT(movePiece(int)));
+    QObject::connect(this, SIGNAL(player1_end(std::vector<int>)),    &(*pp1),SLOT(post_game_analysis(std::vector<int>)));
+    QObject::connect(&(*pp1),SIGNAL(turn_complete(bool)),              this, SLOT(turnComplete(bool)));
+
+    QObject::connect(this, SIGNAL(player2_start(positions_and_dice)),&(*pp2),SLOT(start_turn(positions_and_dice)));
+    QObject::connect(&(*pp2),SIGNAL(select_piece(int)),                this, SLOT(movePiece(int)));
+    QObject::connect(this, SIGNAL(player2_end(std::vector<int>)),    &(*pp2),SLOT(post_game_analysis(std::vector<int>)));
+    QObject::connect(&(*pp2),SIGNAL(turn_complete(bool)),              this, SLOT(turnComplete(bool)));
+
+    QObject::connect(this, SIGNAL(player3_start(positions_and_dice)),&(*pp3),SLOT(start_turn(positions_and_dice)));
+    QObject::connect(&(*pp3),SIGNAL(select_piece(int)),                this, SLOT(movePiece(int)));
+    QObject::connect(this, SIGNAL(player3_end(std::vector<int>)),    &(*pp3),SLOT(post_game_analysis(std::vector<int>)));
+    QObject::connect(&(*pp3),SIGNAL(turn_complete(bool)),              this, SLOT(turnComplete(bool)));
+
+    QObject::connect(this, SIGNAL(player4_start(positions_and_dice)),&(*pp4),SLOT(start_turn(positions_and_dice)));
+    QObject::connect(&(*pp4),SIGNAL(select_piece(int)),                this, SLOT(movePiece(int)));
+    QObject::connect(this, SIGNAL(player4_end(std::vector<int>)),    &(*pp4),SLOT(post_game_analysis(std::vector<int>)));
+    QObject::connect(&(*pp4),SIGNAL(turn_complete(bool)),              this, SLOT(turnComplete(bool)));
+    if(debug) cout << "connection established\n";
+
+    if(debug) cout << "Init end" << endl;
+    if(firstInit == true)
+        firstInit = false;
+    gameTrainFlag = false;
+    gameFlag = true;
+}
+
+void game::init_train_games()
+{
+    if(!firstInit)
+    {
+        QObject::disconnect(this,SIGNAL(player1_start(positions_and_dice)),&(*pp1), SLOT(start_turn(positions_and_dice)));
+        QObject::disconnect(&(*pp1),SIGNAL(select_piece(int)),               this, SLOT(movePiece(int)));
+        QObject::disconnect(this, SIGNAL(player1_end(std::vector<int>)),    &(*pp1),SLOT(post_game_analysis(std::vector<int>)));
+        QObject::disconnect(&(*pp1),SIGNAL(turn_complete(bool)),                this,SLOT(turnComplete(bool)));
+
+        QObject::disconnect(this, SIGNAL(player2_start(positions_and_dice)),&(*pp2),SLOT(start_turn(positions_and_dice)));
+        QObject::disconnect(&(*pp2),SIGNAL(select_piece(int)),                 this, SLOT(movePiece(int)));
+        QObject::disconnect(this, SIGNAL(player2_end(std::vector<int>)),    &(*pp2),SLOT(post_game_analysis(std::vector<int>)));
+        QObject::disconnect(&(*pp2),SIGNAL(turn_complete(bool)),               this, SLOT(turnComplete(bool)));
+
+        QObject::disconnect(this, SIGNAL(player3_start(positions_and_dice)),&(*pp3),SLOT(start_turn(positions_and_dice)));
+        QObject::disconnect(&(*pp3),SIGNAL(select_piece(int)),                 this, SLOT(movePiece(int)));
+        QObject::disconnect(this, SIGNAL(player3_end(std::vector<int>)),    &(*pp3),SLOT(post_game_analysis(std::vector<int>)));
+        QObject::disconnect(&(*pp3),SIGNAL(turn_complete(bool)),               this, SLOT(turnComplete(bool)));
+
+        QObject::disconnect(this, SIGNAL(player4_start(positions_and_dice)),&(*pp4),SLOT(start_turn(positions_and_dice)));
+        QObject::disconnect(&(*pp4),SIGNAL(select_piece(int)),                 this, SLOT(movePiece(int)));
+        QObject::disconnect(this, SIGNAL(player4_end(std::vector<int>)),    &(*pp4),SLOT(post_game_analysis(std::vector<int>)));
+        QObject::disconnect(&(*pp4),SIGNAL(turn_complete(bool)),              this, SLOT(turnComplete(bool)));
+        //std::cout << "Disconnected \n";
+    }
+    QObject::connect(this, SIGNAL(player1_start(positions_and_dice)),&(*pp1),SLOT(start_turn(positions_and_dice)));
+    QObject::connect(&(*pp1),SIGNAL(select_piece(int)),                this, SLOT(movePiece(int)));
+    QObject::connect(this, SIGNAL(player1_end(std::vector<int>)),    &(*pp1),SLOT(post_game_analysis(std::vector<int>)));
+    QObject::connect(&(*pp1),SIGNAL(turn_complete(bool)),              this, SLOT(turnComplete(bool)));
+
+    QObject::connect(this, SIGNAL(player2_start(positions_and_dice)),&(*pp2),SLOT(start_turn(positions_and_dice)));
+    QObject::connect(&(*pp2),SIGNAL(select_piece(int)),                this, SLOT(movePiece(int)));
+    QObject::connect(this, SIGNAL(player2_end(std::vector<int>)),    &(*pp2),SLOT(post_game_analysis(std::vector<int>)));
+    QObject::connect(&(*pp2),SIGNAL(turn_complete(bool)),              this, SLOT(turnComplete(bool)));
+
+    QObject::connect(this, SIGNAL(player3_start(positions_and_dice)),&(*pp3),SLOT(start_turn(positions_and_dice)));
+    QObject::connect(&(*pp3),SIGNAL(select_piece(int)),                this, SLOT(movePiece(int)));
+    QObject::connect(this, SIGNAL(player3_end(std::vector<int>)),    &(*pp3),SLOT(post_game_analysis(std::vector<int>)));
+    QObject::connect(&(*pp3),SIGNAL(turn_complete(bool)),              this, SLOT(turnComplete(bool)));
+
+    QObject::connect(this, SIGNAL(player4_start(positions_and_dice)),&(*pp4),SLOT(start_turn(positions_and_dice)));
+    QObject::connect(&(*pp4),SIGNAL(select_piece(int)),                this, SLOT(movePiece(int)));
+    QObject::connect(this, SIGNAL(player4_end(std::vector<int>)),    &(*pp4),SLOT(post_game_analysis(std::vector<int>)));
+    QObject::connect(&(*pp4),SIGNAL(turn_complete(bool)),              this, SLOT(turnComplete(bool)));
+
+    if(firstInit == 0)
+        firstInit = 1;
+    gameTrainFlag = true;
+    gameFlag = false;
+}
+
+int game::isOccupied(int index){ //returns number of people of another color
+    int number_of_people = 0;
+
+    if(index != 99){
+        for(size_t i = 0; i < player_positions.size(); ++i){
+            if(i < static_cast<size_t>(color)*4 || i >= static_cast<size_t>(color)*4 + 4){        //Disregard own players
+                if(player_positions[i] == index){
+                    ++number_of_people;
+                }
+            }
+        }
+    }
+    return number_of_people;
 }
 
 void game::reset(){
@@ -43,21 +169,6 @@ int game::isStar(int index){
     return 0;
 }
 
-int game::isOccupied(int index){ //returns number of people of another color
-    int number_of_people = 0;
-
-    if(index != 99){
-        for(size_t i = 0; i < player_positions.size(); ++i){
-            if(i < static_cast<size_t>(color)*4 || i >= static_cast<size_t>(color)*4 + 4){        //Disregard own players
-                if(player_positions[i] == index){
-                    ++number_of_people;
-                }
-            }
-        }
-    }
-    return number_of_people;
-}
-
 bool game::isGlobe(int index){
     if(index < 52){     //check only the indexes on the board, not in the home streak
         if(index % 13 == 0 || (index - 8) % 13 == 0 || isOccupied(index) > 1){  //if more people of the same team stand on the same spot it counts as globe
@@ -82,6 +193,14 @@ void game::move_start(int fixed_piece){
         player_positions[fixed_piece] = color*13; //move me to start
         send_them_home(color*13); //send pieces home if they are on our start
     }
+}
+
+void game::add_players(ludo_player_qlearning *p1, ludo_player_random *p2, ludo_player_random *p3, ludo_player_random *p4)
+{
+    pp1 = p1;
+    pp2 = p2;
+    pp3 = p3;
+    pp4 = p4;
 }
 
 int game::next_turn(unsigned int delay = 0){
@@ -136,7 +255,7 @@ void game::movePiece(int relative_piece){
     } else {
         //convert to relative position
         if(relative_pos == 99){
-            std::cout << "I tought this would be it ";
+            //std::cout << "I tought this would be it ";
         } else if(relative_pos == 51){ //if people land on 51, they shouldn't be sent to goal stretch
             switch(color){
             case 0 : relative_pos = 51; break;
@@ -244,19 +363,54 @@ void game::turnComplete(bool win){
     turn_complete = true;
     if(game_complete){
         std::cout << "player: " << color << " won" << std::endl;
+        switch(color){
+        case 0:
+            winCnt1++;
+            break;
+        case 1:
+            winCnt2++;
+            break;
+        case 2:
+            winCnt3++;
+            break;
+        case 3:
+            winCnt4++;
+            break;
+        }
+        totalWinCnt++;
+        if (totalWinCnt == 1500 && gameFlag == true)
+        {
+            std::cout << "Player 1 has won: " << winCnt1 << " times with a winrate of: " << (float)winCnt1/(float)totalWinCnt << endl;
+            std::cout << "Player 2 has won: " << winCnt2 << " times with a winrate of: " << (float)winCnt2/(float)totalWinCnt << endl;
+            std::cout << "Player 3 has won: " << winCnt3 << " times with a winrate of: " << (float)winCnt3/(float)totalWinCnt << endl;
+            std::cout << "Player 4 has won: " << winCnt4 << " times with a winrate of: " << (float)winCnt4/(float)totalWinCnt << endl;
+            std::cout << "Total games: " << totalWinCnt << "\n\n";
+        }
+
         emit declare_winner(color);
     }
 }
 
+void game::resetCnt()
+{
+    winCnt1 = winCnt2 = winCnt3 = winCnt4 = 0;
+    totalWinCnt = 0;
+}
+
 void game::run() {
-    if(DEBUG) std::cout << "color:     relative pos => fixed\n";
+    cout << "run()" << endl;
+    if(debug) std::cout << "color:     relative pos => fixed\n";
+    for(int i = 0; i < 100000; i++)
+       start();
     while(!game_complete){
         if(turn_complete){
             turn_complete = false;
             msleep(game_delay/4);
             next_turn(game_delay - game_delay/4);
+            resetCnt();
         }
     }
+    reset();
     emit close();
     QThread::exit();
 }

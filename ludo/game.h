@@ -6,8 +6,10 @@
 #include <iostream>
 #include <QtCore>
 #include <QThread>
+#include <a.out.h>
 
-
+#include "ludo_player_random.h"
+#include "ludo_player_qlearning.h"
 #include "positions_and_dice.h"
 
 // static int global_color = 5;
@@ -30,13 +32,23 @@ private:
     int rel_to_fixed(int relative_piece_index);
     void send_them_home(int index);
     void move_start(int fixed_piece);
+    void resetCnt();
     int next_turn(unsigned int delay);
     static void msleep(unsigned long msecs){
         if(msecs > 0){
             QThread::msleep(msecs);
         }
     }
+
+    bool firstInit = false;
+    bool gameTrainFlag = false;
+    bool gameFlag = false;
+    int winCnt1, winCnt2, winCnt3, winCnt4;
+    int totalWinCnt = 0;
+    ludo_player_qlearning *pp1;
+    ludo_player_random *pp2, *pp3, *pp4;
 public:
+    void add_players(ludo_player_qlearning *p1, ludo_player_random *p2, ludo_player_random *p3, ludo_player_random *p4);
     int color;
     std::vector<int> player_positions;
     void rollDice(){
@@ -47,6 +59,9 @@ public:
     game();
     void setGameDelay(unsigned int mili_seconds){ game_delay = mili_seconds; }
     void reset();
+    void init_train_games();
+    void init_games();
+
 signals:
     void player1_start(positions_and_dice);
     void player2_start(positions_and_dice);
