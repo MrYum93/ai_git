@@ -39,7 +39,8 @@ private:
     vector<tuple<int,int,int>> player_state_action;
     tuple<int, int, int, int> player_state_action_prevPos;
     bool update_flag;
-    bool debug = 1;
+    bool debug = 0;
+    bool a_debug = 0;
     int player_played;
     int dice_roll;
     int cum_rew_p0;
@@ -57,7 +58,7 @@ public slots:
 };
 
 /* -------Possible actions---------
- 0 * 1 0 0 0 0 0 0 0 0 - Move
+ 0 * 1 0 0 0 0 0 0 0 0 - Move in safety
  1 * 1 1 0 0 0 0 0 0 0 - Move with enemy immediately behind
  2 * 0 0 1 0 0 0 0 0 0 - Get out from home
  3 * 0 0 0 1 0 0 0 0 0 - Hit enemy
@@ -74,12 +75,12 @@ public slots:
  * -------------------------------- */
 
 /* -------possible states-------
- * 1 0 0 0 0 0 - Home
- * 0 1 0 0 0 0 - Goal
- * 0 0 1 0 0 0 - Goal stretch
- * 0 0 0 1 0 0 - Globe or with friend
- * 0 0 0 0 1 0 - Free space in danger
- * 0 0 0 0 0 1 - Free space
+ 0 * 1 0 0 0 0 0 - Home
+ 1 * 0 1 0 0 0 0 - Goal
+ 2 * 0 0 1 0 0 0 - Goal stretch
+ 3 * 0 0 0 1 0 0 - Globe or with friend
+ 4 * 0 0 0 0 1 0 - Free space in danger
+ 5 * 0 0 0 0 0 1 - Free space
  * ----------------------------- */
 
 #endif // LUDO_PLAYER_QLEARNING_H

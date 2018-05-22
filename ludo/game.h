@@ -6,6 +6,8 @@
 #include <iostream>
 #include <QtCore>
 #include <QThread>
+#include <QObject>
+#include <QApplication>
 #include <a.out.h>
 
 #include "ludo_player_random.h"
@@ -47,8 +49,10 @@ private:
     int totalWinCnt = 0;
     ludo_player_qlearning *pp1;
     ludo_player_random *pp2, *pp3, *pp4;
+    QApplication *anApplication;
 public:
     void add_players(ludo_player_qlearning *p1, ludo_player_random *p2, ludo_player_random *p3, ludo_player_random *p4);
+    void runUserDef(QApplication *gameObject);
     int color;
     std::vector<int> player_positions;
     void rollDice(){

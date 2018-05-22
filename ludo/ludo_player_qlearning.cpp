@@ -33,7 +33,7 @@ ludo_player_qlearning::ludo_player_qlearning():
 
     if(file_exists("trainDataQ.txt")) // if already trained once reset
     {
-
+        if(debug) cout << "tranDataQ.txt reset";
         Q_table = Eigen::MatrixXd::Zero(nrows, ncols);
         ifstream f_in ("trainDataQ.txt");
         if(f_in.is_open())
@@ -50,15 +50,9 @@ ludo_player_qlearning::ludo_player_qlearning():
     else
     {
         Q_table = Eigen::MatrixXd(nrows, ncols);
-
-        ofstream logFile;
-        logFile.open("logLudo.txt");
-        logFile << Q_table;
-        logFile.close();
-        if(debug) cout << "qtable created\n";
-
     }
-    if(debug) cout << "Q_table init done" << endl;
+    if(file_exists("ludoLog.txt"))
+        remove("ludoLog.txt");
 }
 
 bool ludo_player_qlearning::file_exists(const string &filename)
@@ -115,9 +109,9 @@ void ludo_player_qlearning::updateQtable(tuple<int, int, int, int> player_state_
     int performed_action = get<2>(player_state_action_pos);
     int prev_pos = get<3>(player_state_action_pos);
     int curr_pos = player_pos_start_of_turn[player_played];
-    cout << "Prev pos: " << prev_pos << endl;
-    cout << "Dice_roll: " << dice_roll << endl;
-    cout << "Curr pos: " << curr_pos << endl;
+    if(debug) cout << "Prev pos: " << prev_pos << endl;
+    if(debug) cout << "Dice_roll: " << dice_roll << endl;
+    if(debug) cout << "Curr pos: " << curr_pos << endl;
 
     // define the states used for other func
     float curr_state[7];
@@ -127,28 +121,28 @@ void ludo_player_qlearning::updateQtable(tuple<int, int, int, int> player_state_
     double reward = curr_pos; //init reward based on curr player pos
     if(prev_pos == curr_pos && prev_state == curr)
     {
-        cout << "Piece has not moved" << endl;
+        if(debug) cout << "Piece has not moved" << endl;
         reward -= -0.3;
     }
 
     if(curr_pos == 99 && prev_pos != curr_pos)
     {
-        cout << "Goal reached\n";
+        if(debug) cout << "Goal reached\n";
         reward += 99;
     }
 
     if(curr_pos == 0 && prev_pos == -1 && performed_action == 2)
     {
-        cout << "You moved out from home... Yay!\n";
+        if(debug) cout << "You moved out from home... Yay!\n";
         reward += 0.3;
     }
 
     acc += reward; //accululative reward
 
     for(int i = 0; i < 4; i++)
-        cout << "reward for #" << i << " " << player_pos_start_of_turn[i]*10 << endl;
+        if(debug) cout << "reward for #" << i << " " << player_pos_start_of_turn[i]*10 << endl;
 
-    cout << "Player: " << player_played << " at: " << curr_pos << " with possible reward: " << reward << endl;
+    if(debug) cout << "Player: " << player_played << " at: " << curr_pos << " with possible reward: " << reward << endl;
 
     double max = -100000000;
     for(int i = 0; i < 13; i++)
@@ -158,18 +152,18 @@ void ludo_player_qlearning::updateQtable(tuple<int, int, int, int> player_state_
             max = i;
     }
 
-    cout << "Prev state: " << prev_state << endl;
-    cout << "performed action: " << performed_action << endl;
-//    cout << "prev value: " << Q_table(prev_state, performed_action) << endl;
+    if(debug) cout << "Prev state: " << prev_state << endl;
+    if(debug) cout << "performed action: " << performed_action << endl;
+//    if(debug) cout << "prev value: " << Q_table(prev_state, performed_action) << endl;
     Q_table(prev_state, performed_action) += alfa * (reward + gamma * max - Q_table(prev_state, performed_action));
-//    cout << "prev value: " << Q_table(prev_state, performed_action) << endl;
+//    if(debug) cout << "prev value: " << Q_table(prev_state, performed_action) << endl;
 
 }
 
 void ludo_player_qlearning::calc_possible_actions(float action_input[9], int curr_pos, int dice, int self)
 {
-//    cout << "now we calc possible actions!" << endl;
-    int nxt_pos;
+    if(a_debug) cout << endl << "New check for " << self << endl;
+    int nxt_pos = curr_pos;
     if(curr_pos != -1 || curr_pos >= 99) //calc the next pos of piece
     {
         nxt_pos = curr_pos + dice;
@@ -181,20 +175,32 @@ void ludo_player_qlearning::calc_possible_actions(float action_input[9], int cur
 
     //Move out from home                                                - 0 0 1 0 0 0 0 0 0
     if(curr_pos == -1 && dice == 6)
+    {
         action_input[2] = 1;
+        if(a_debug) cout << "Move out from start\n";
+    }
 
     if(curr_pos != -1) //all the actions availble when not in home
     {
         //Hit star                                                      - 0 0 0 0 1 0 0 0 0
         if(is_star(nxt_pos))
+        {
             action_input[4] = 1;
+            if(a_debug) cout << "Hits star\n";
+        }
         //Hit globe                                                     - 0 0 0 0 0 0 1 0 0
         if(is_globe(nxt_pos))
+        {
             action_input[6] = 1;
+            if(a_debug) cout << "Hit globe\n";
+        }
         //or friend                                                     - 0 0 0 0 0 0 1 0 0
         for(int i = 0; i < 4; i++)
             if(nxt_pos == player_pos_start_of_turn[i] && self != i)
+            {
                 action_input[6] = 1;
+                if(a_debug) cout << "hit friend\n";
+            }
                 //Hit globe with enemy behind (great state)             - 0 1 0 0 0 0 1 0 0
         //Hit globe with enemy on it or hit stack of enemies            - 0 0 0 1 0 0 1 0 0
         for(int i = 1; i < 4; i++)
@@ -205,13 +211,20 @@ void ludo_player_qlearning::calc_possible_actions(float action_input[9], int cur
                         {
                             action_input[3] = 1;
                             action_input[6] = 1;
+                            if(a_debug) cout << "hit globe with enemy\n";
                         }
         //Hit goal                                                      - 0 0 0 0 0 0 0 1 0
         if(nxt_pos == 56)
+        {
             action_input[7] = 1;
+            if(a_debug) cout << "hit goal\n";
+        }
         //Hit goal stretch                                              - 0 0 0 0 0 0 0 0 1
         if(nxt_pos > 50 && nxt_pos < 56)
+        {
             action_input[8] = 1;
+            if(a_debug) cout << "Hit goal stretch\n";
+        }
         //Go through all enemy
         for(int i = 4; i < 16; i++)
         {
@@ -220,21 +233,29 @@ void ludo_player_qlearning::calc_possible_actions(float action_input[9], int cur
             {
                 //Check if any enemy is 6 or less behind                - 0 1 0 0 0 0 0 0 0
                 if(player_pos_start_of_turn[i] == nxt_pos - j)
+                {
                     action_input[1] = 1;
+                    if(a_debug) cout << "enemy is behind\n";
+                }
                 //Check if enemy is behind second star                  - 0 1 0 0 1 0 0 0 0
                 if(action_input[4] == 1)
                     if(player_pos_start_of_turn[i] == nxt_star_pos(nxt_pos) - j)
                     {
                         action_input[1] = 1;
+                        if(a_debug) cout << "enemy behind second star\n";
                         //Check if enemy is behind second or first star - 0 1 0 0 1 1 0 0 0
                         if(player_pos_start_of_turn[i] == nxt_pos - j)
+                        {
                             action_input[5] = 1;
+                            if(a_debug) cout << "enemy is behind first star\n";
+                        }
                     }
             }
             //Hit enemy                                                 - 0 0 0 1 0 0 0 0 0
             if(nxt_pos == player_pos_start_of_turn[i])
             {
                 action_input[3] = 1;
+                if(a_debug) cout << "Hit enemy home\n";
                 //Hit enemy with enemy behind                           - 0 1 0 1 0 0 0 0 0
                 //Is taken care of above
             }
@@ -244,28 +265,30 @@ void ludo_player_qlearning::calc_possible_actions(float action_input[9], int cur
                 action_input[4] == 0 && action_input[5] == 0 && action_input[6] == 0 &&
                 action_input[7] == 0 && action_input[8] == 0)
         {
-            cout << "No special moves";
+            if(a_debug) cout << "No special moves";
             if(curr_pos != 99)
             {
                 //Move in danger                                        - 1 1 0 0 0 0 0 0 0
                 if(action_input[1] == 1)
                 {
-                    cout << " and not in goal, but move with danger" << endl;
+                    if(a_debug) cout << " and not in goal, but move with danger" << endl;
                     action_input[0] = 1;
                 }
                 //Move                                                  - 1 0 0 0 0 0 0 0 0
                 else
                 {
-                    cout << " and not in goal, so just move in safety" << endl;
+                    if(a_debug) cout << " and not in goal, so just move in safety" << endl;
                     action_input[0] = 1;
                     action_input[1] = 0;
                  }
             }
             else
-                cout << " but is already in goal!" << endl;
+                if(a_debug) cout << " but is already in goal!" << endl;
         }
         //No move possible                                              - 0 0 0 0 0 0 0 0 0
     }
+    else
+        if(a_debug) cout << "Is in home\n";
 }
 
 //For all moves have a factor for how long you are in the game !!NEEDS TO BE SOMEWHERE ELSE!!
@@ -335,7 +358,7 @@ vector<tuple<int, int, int> > ludo_player_qlearning::player_state_actionInterpre
     vector<tuple<int, int, int>> output; //What is returned in the end, all the ppossible state/action pairs
     for(int i = 0; i < 6; i++)
     {
-        if(state_input[i] == 1) //Player is in home
+        if(state_input[i] == 1) //Check state we are in
         {
             vector<int> actions; //Create vector where all the possible actions to take
             /* push the viable action back for other func to deal with */
@@ -368,6 +391,7 @@ vector<tuple<int, int, int> > ludo_player_qlearning::player_state_actionInterpre
             else
                 actions.push_back(13);
 
+            cout << "Action size: " << actions.size();
             // done with all the state_actions
             for(int j = 0; j < actions.size(); j++)
             {
@@ -375,6 +399,9 @@ vector<tuple<int, int, int> > ludo_player_qlearning::player_state_actionInterpre
                 output.push_back(make_tuple(self, i, action));
             }
         }
+    }
+    for ( const auto& i : output ) {
+      cout << " with action output: " << get<0>(i) << " " << get<1>(i) << " " << get<2>(i) << endl;
     }
     return output;
 
@@ -386,6 +413,8 @@ tuple<int, int, int, int> ludo_player_qlearning::e_greedy(double eps)
     random_device rd; //used as a seed for mt19937
     mt19937 mt(rd()); //much like the standard rand() func but better as it has a longer sequence
     uniform_int_distribution<int> dist(1, 100);
+
+    if(debug) cout << "Dist mt: " << dist(mt) << " vs " << limit << endl;
 
     if(dist(mt) < limit)
     {
@@ -403,22 +432,23 @@ tuple<int, int, int, int> ludo_player_qlearning::e_greedy(double eps)
     //figure out what this does!!
         auto it = find_if(player_state_action.begin(), player_state_action.end(), [](const tuple<int, int, int>& e) {return get<0>(e)  == 0;});
         int pos = distance(player_state_action.begin(), it); //find distance between first element and itterator
-        cout << "Position: " << pos << endl;
+        if(debug) cout << "Position: " << pos << endl;
         int state = get<1>(player_state_action[pos]);
         int action = get<2>(player_state_action[pos]);
 
-        cout << "TEST:" << endl;
-        for(int i = 0; i < player_state_action.size(); i++)
-        {
-            int player = get<0>(player_state_action[i]);
-            int state = get<1>(player_state_action[i]);
-            int action = get<2>(player_state_action[i]);
+//        cout << "TEST:" << endl;
+//        for(unsigned int i = 0; i < player_state_action.size(); i++)
+//        {
+//            int player = get<0>(player_state_action[i]);
+//            int state = get<1>(player_state_action[i]);
+//            int action = get<2>(player_state_action[i]);
 
-            double test = Q_table(state, action);
-            cout << test << " ";
-        }
-        cout << endl;
-        cout << "Player: " << player << " state: " << state << " action: " << action << endl;
+//            double test = Q_table(state, action);
+//            cout << test << " ";
+//        }
+        if(debug) cout << endl;
+        if(debug) cout << "Player: " << player << " state: " << state << " action: " << action << endl;
+        update_flag = 1;
 
         return make_tuple(player, state, action, prev_pos);
     }
@@ -433,14 +463,14 @@ tuple<int, int, int, int> ludo_player_qlearning::e_greedy(double eps)
             int action = get<2>(player_state_action[i]);
 
             double test = Q_table(state, action);
-            cout << "test: " << test;
+            if(debug) cout << "test: " << test;
             if(test > max)
             {
                 max = test;
                 pos = i;
                 player_played = player;
             }
-            cout << endl;
+            if(debug) cout << endl;
         }
         int prev_pos = player_pos_start_of_turn[player_played];
         int state = get<1>(player_state_action[pos]);
@@ -453,22 +483,22 @@ tuple<int, int, int, int> ludo_player_qlearning::e_greedy(double eps)
 int ludo_player_qlearning::make_q_decision()
 {
 
-    cout << "***** New decision *****" << endl << endl;
+    if(debug) cout << "***** New decision *****" << endl << endl;
 
     if(update_flag != 1)
-        cout << "No update...\n";
+        if(debug) cout << "No update...\n";
     else
     {
-        cout << "Update!!!" << endl;
-//        cout << "Previous player played: " << get<0>(player_state_action_prevPos) << endl;
-//        cout << "It was in state: " << get<1>(player_state_action_prevPos) << " and did: " << get<2>(player_state_action_prevPos) << endl;
+        if(debug) cout << "Update!!!" << endl;
+//        if(debug) cout << "Previous player played: " << get<0>(player_state_action_prevPos) << endl;
+//        if(debug) cout << "It was in state: " << get<1>(player_state_action_prevPos) << " and did: " << get<2>(player_state_action_prevPos) << endl;
         updateQtable(player_state_action_prevPos);
         player_state_action.clear();
         ofstream log("ludoLog.txt", ios_base::app);
         ofstream current_table("trainDataQ.txt");
         current_table << Q_table << endl;
         log << Q_table << endl << endl;
-//        cout << "The table is saved" << endl;
+//        if(debug) cout << "The table is saved" << endl;
         update_flag = 0;
     }
     player_state_action.clear();
@@ -476,7 +506,7 @@ int ludo_player_qlearning::make_q_decision()
     {
         if(player_pos_start_of_turn[i] >= -1 && player_pos_start_of_turn[i] < 99)
         {
-            cout << "Player: " << i << " at pos: " << player_pos_start_of_turn[i] << " is about to move " << dice_roll << endl;
+            if(debug) cout << "Player: " << i << " at pos: " << player_pos_start_of_turn[i] << " is about to move " << dice_roll << endl;
 
             float action_input[9] = {0,0,0,0,0,0,0,0,0};
             float state_input[6] = {0,0,0,0,0,0};
@@ -484,29 +514,29 @@ int ludo_player_qlearning::make_q_decision()
             calc_possible_actions(action_input, player_pos_start_of_turn[i], dice_roll, i);
             calc_curr_state(state_input, player_pos_start_of_turn[i], i);
 
-            cout << "Possible actions: ";
+            if(debug) cout << "Possible actions: ";
             for(int i = 0; i < (sizeof(action_input)/sizeof(float)); i++)
-                cout << action_input[i] << " ";
-            cout << endl;
-            cout << "Curr state: ";
+                if(debug) cout << action_input[i] << " ";
+            if(debug) cout << endl;
+            if(debug) cout << "Curr state: ";
             for(int i = 0; i < (sizeof(state_input)/sizeof(float)); i++)
-                cout << state_input[i] << " ";
-            cout << endl;
+                if(debug) cout << state_input[i] << " ";
+            if(debug) cout << endl;
 
             vector<tuple<int, int, int>> player_i = player_state_actionInterpreter(state_input, action_input, i);
             player_state_action.insert(player_state_action.end(), player_i.begin(), player_i.end());
         }
         else
-            cout << "Player: " << i << " is already in goal \n";
+            if(debug) cout << "Player: " << i << " is already in goal \n";
     }
-    update_flag = 1;
+    update_flag = 0;
     if(player_state_action.size() > 4)
     {
-        cout << "More actions than allowed, with: " << player_state_action.size() << "\n";
+        if(debug) cout << "More actions than allowed, with: " << player_state_action.size() << "\n";
         exit(0);
     }
 
-    player_state_action_prevPos = e_greedy(0); //0 = greedy, 1 = random
+    player_state_action_prevPos = e_greedy(1); //0 = greedy, 1 = random
 
     if(debug) cout << "egreedy is done" << endl;
     return player_played; //gets from e_greedy algorithm

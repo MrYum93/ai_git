@@ -27,7 +27,7 @@ int main(int argc, char *argv[]){
     if(debug) cout << "Pointers to players created" << endl;
 
     game g;
-    g.setGameDelay(000); //if you want to see the game, set a delay
+    g.setGameDelay(0030); //if you want to see the game, set a delay
     if(debug) cout << "Game start" << endl;
 
 
@@ -49,10 +49,10 @@ int main(int argc, char *argv[]){
     QApplication * aPtr;
     aPtr = &a;
 
-    for(int i = 0; i < 10000; ++i){
-        g.start();
-        a.exec();
-        g.reset();
-    }
+    g.runUserDef(aPtr);
+    g.start();
+    a.exec();
+//    g.reset();
+
     return 0;
 }

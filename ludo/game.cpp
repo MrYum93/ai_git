@@ -1,6 +1,6 @@
 #include "game.h"
 #define DEBUG 0
-bool debug = 1;
+bool debug = 0;
 
 game::game():
     game_complete(false),
@@ -203,6 +203,11 @@ void game::add_players(ludo_player_qlearning *p1, ludo_player_random *p2, ludo_p
     pp4 = p4;
 }
 
+void game::runUserDef(QApplication *gameObject)
+{
+    anApplication = gameObject;
+}
+
 int game::next_turn(unsigned int delay = 0){
     if(game_complete){
         return 0;
@@ -362,7 +367,7 @@ void game::turnComplete(bool win){
     game_complete = win;
     turn_complete = true;
     if(game_complete){
-        std::cout << "player: " << color << " won" << std::endl;
+        if(debug) cout << "player: " << color << " won" << std::endl;
         switch(color){
         case 0:
             winCnt1++;
@@ -378,13 +383,14 @@ void game::turnComplete(bool win){
             break;
         }
         totalWinCnt++;
-        if (totalWinCnt == 1500 && gameFlag == true)
+        if (totalWinCnt == 1000 && gameFlag == true)
         {
             std::cout << "Player 1 has won: " << winCnt1 << " times with a winrate of: " << (float)winCnt1/(float)totalWinCnt << endl;
             std::cout << "Player 2 has won: " << winCnt2 << " times with a winrate of: " << (float)winCnt2/(float)totalWinCnt << endl;
             std::cout << "Player 3 has won: " << winCnt3 << " times with a winrate of: " << (float)winCnt3/(float)totalWinCnt << endl;
             std::cout << "Player 4 has won: " << winCnt4 << " times with a winrate of: " << (float)winCnt4/(float)totalWinCnt << endl;
             std::cout << "Total games: " << totalWinCnt << "\n\n";
+            resetCnt();
         }
 
         emit declare_winner(color);
@@ -397,20 +403,45 @@ void game::resetCnt()
     totalWinCnt = 0;
 }
 
-void game::run() {
-    cout << "run()" << endl;
-    if(debug) std::cout << "color:     relative pos => fixed\n";
-    for(int i = 0; i < 100000; i++)
-       start();
-    while(!game_complete){
-        if(turn_complete){
-            turn_complete = false;
-            msleep(game_delay/4);
-            next_turn(game_delay - game_delay/4);
-            resetCnt();
+void game::run()
+{
+    for(int i = 0; i < 10000; i++)
+    {
+        start();
+        while(!game_complete)
+        {
+            if(turn_complete)
+            {
+                turn_complete = false;
+                msleep(game_delay/4);
+                next_turn(game_delay - game_delay/4);
+            }
         }
+        reset();
     }
-    reset();
     emit close();
     QThread::exit();
+    if(debug) cout << "Exiting" << endl;
 }
+
+//void game::run() {
+//    std::cout << "Entered run \n" ;
+//    if(DEBUG) std::cout << "color:     relative pos => fixed\n";
+//    for (int ii = 0; ii < 100000000; ii++){
+//        start();
+//        // std::cout<< "Started game\n" ;
+//        while(!game_complete){
+//            //std::cout << "Running...\n";
+//            if(turn_complete){
+//                turn_complete = false;
+//                msleep(game_delay/4);
+//                next_turn(game_delay - game_delay/4);
+//            }
+//        }
+//        reset();
+
+//        //std::cout << ii << "\n";
+//    }
+//    emit close();
+//    QThread::exit();
+//}
