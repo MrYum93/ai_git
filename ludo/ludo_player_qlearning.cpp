@@ -31,10 +31,10 @@ ludo_player_qlearning::ludo_player_qlearning():
     int nrows = 6; //all possible states
     int ncols = 14;//all possible actions
 
-    if(file_exists("trainDataQ.txt")) // if already trained once reset
+    if(file_exists("trainDataQ.txt")) // Continue from prev training set
     {
-        if(debug) cout << "tranDataQ.txt reset";
-        Q_table = Eigen::MatrixXd::Zero(nrows, ncols);
+        if(debug) cout << "tranDataQ.txt reset\n";
+        Q_table = Eigen::MatrixXd(nrows, ncols);
         ifstream f_in ("trainDataQ.txt");
         if(f_in.is_open())
         {
@@ -45,14 +45,31 @@ ludo_player_qlearning::ludo_player_qlearning():
                     f_in >> item;
                     Q_table(row,col) = item;
                 }
+            f_in.close();
         }
     }
     else
     {
-        Q_table = Eigen::MatrixXd(nrows, ncols);
+        Q_table = Eigen::MatrixXd::Zero(nrows, ncols);
     }
     if(file_exists("ludoLog.txt"))
         remove("ludoLog.txt");
+    update_flag = 0;
+    bool train  = 0;
+    if(train)
+    {
+        alpha = 0.7; // learning rate
+        gamma = 0.01; // discount factor
+        epsilon = 0.9; // 1 = random, 0 = greedy
+    }
+    else
+    {
+        alpha = 0.3; // learning rate
+        gamma = 0.1; // discount factor
+        epsilon = 0.01; // 1 = random, 0 = greedy
+    }
+    //good results: first train with a: 0.7, g: 0.01, e: 1
+    //Then train run greedy with a: 0.3, g: 0.1, e: 0.01
 }
 
 bool ludo_player_qlearning::file_exists(const string &filename)
@@ -102,23 +119,23 @@ int ludo_player_qlearning::curr_state_intepreter(float state_input[6])
 
 void ludo_player_qlearning::updateQtable(tuple<int, int, int, int> player_state_action_pos)
 {
-    double alfa = 0.5; // learning rate
-    double gamma = 0.1;
-    int player_played = get<0>(player_state_action_pos);
+    int player_played_i = get<0>(player_state_action_pos);
     int prev_state = get<1>(player_state_action_pos);
     int performed_action = get<2>(player_state_action_pos);
     int prev_pos = get<3>(player_state_action_pos);
-    int curr_pos = player_pos_start_of_turn[player_played];
+    int curr_pos = player_pos_start_of_turn[player_played_i];
     if(debug) cout << "Prev pos: " << prev_pos << endl;
     if(debug) cout << "Dice_roll: " << dice_roll << endl;
     if(debug) cout << "Curr pos: " << curr_pos << endl;
 
     // define the states used for other func
     float curr_state[7];
-    calc_curr_state(curr_state, curr_pos, player_played); //calc all the possible states
+    calc_curr_state(curr_state, curr_pos, player_played_i); //calc all the possible states
     int curr = curr_state_intepreter(curr_state); //store the current state
 
-    double reward = curr_pos; //init reward based on curr player pos
+    double reward_gain = 1;//curr_pos*0.1; //init reward based on curr player pos
+    double reward = 0;
+    /*//
     if(prev_pos == curr_pos && prev_state == curr)
     {
         if(debug) cout << "Piece has not moved" << endl;
@@ -128,7 +145,7 @@ void ludo_player_qlearning::updateQtable(tuple<int, int, int, int> player_state_
     if(curr_pos == 99 && prev_pos != curr_pos)
     {
         if(debug) cout << "Goal reached\n";
-        reward += 99;
+        reward += 10; //99
     }
 
     if(curr_pos == 0 && prev_pos == -1 && performed_action == 2)
@@ -136,27 +153,102 @@ void ludo_player_qlearning::updateQtable(tuple<int, int, int, int> player_state_
         if(debug) cout << "You moved out from home... Yay!\n";
         reward += 0.3;
     }
+    /*/ //
+    if(performed_action == 0)
+    {
+        if(debug) cout << "Moves in safety\n";
+        reward += 5*reward_gain;
+    }
+    if(performed_action == 1)
+    {
+        if(debug) cout << "Move with enemy behind nxt pos\n";
+        reward += 1*reward_gain;
+    }
+    if(performed_action == 2)
+    {
+        if(debug) cout << "get out of home\n";
+        reward += 6*reward_gain;
+    }
+    if(performed_action == 3)
+    {
+        if(debug) cout << "hit enemy\n";
+        reward += 15*reward_gain;
+    }
+    if(performed_action == 4)
+    {
+        if(debug) cout << "hit enemy but with danger\n";
+        reward += 10*reward_gain;
+    }
+    if(performed_action == 5)
+    {
+        if(debug) cout << "hit star\n";
+        reward += 10*reward_gain;
+    }
+    if(performed_action == 6)
+    {
+        if(debug) cout << "hit star with enemy behind second star\n";
+        reward += 7*reward_gain;
+    }
+    if(performed_action == 7)
+    {
+        if(debug) cout << "hit star with enemy behind both star\n";
+        reward += 5*reward_gain;
+    }
+    if(performed_action == 8)
+    {
+        if(debug) cout << "hit globe or friend\n";
+        reward += 5*reward_gain;
+    }
+    if(performed_action == 9)
+    {
+        if(debug) cout << "hit globe with enemy behind\n";
+        reward += 10*reward_gain;
+    }
+    if(performed_action == 10)
+    {
+        if(debug) cout << "kill yoself\n";
+        reward += -40*reward_gain;
+    }
+    if(performed_action == 11)
+    {
+        if(debug) cout << "hit goal\n";
+        reward += 20*reward_gain;
+    }
+    if(performed_action == 12)
+    {
+        if(debug) cout << "hit goal stretch\n";
+        reward += 20*reward_gain;
+    }
+    if(performed_action == 13)
+    {
+        if(debug) cout << "do nothing\n";
+        reward += -5*reward_gain;
+    }
+    //*/
 
     acc += reward; //accululative reward
+    if(debug) cout << "Accum: " << acc << endl;
 
     for(int i = 0; i < 4; i++)
-        if(debug) cout << "reward for #" << i << " " << player_pos_start_of_turn[i]*10 << endl;
+        if(reward_debug) cout << "reward for #" << i << " " << player_pos_start_of_turn[i]*10 << endl;
 
     if(debug) cout << "Player: " << player_played << " at: " << curr_pos << " with possible reward: " << reward << endl;
 
-    double max = -100000000;
+    double max = -10000000000000;
     for(int i = 0; i < 13; i++)
     {
         double test = Q_table(curr, i);
+        if(debug) cout << "test: \n" << test << endl;
         if(test > max)
+        {
             max = i;
+        }
     }
-
     if(debug) cout << "Prev state: " << prev_state << endl;
     if(debug) cout << "performed action: " << performed_action << endl;
-//    if(debug) cout << "prev value: " << Q_table(prev_state, performed_action) << endl;
-    Q_table(prev_state, performed_action) += alfa * (reward + gamma * max - Q_table(prev_state, performed_action));
-//    if(debug) cout << "prev value: " << Q_table(prev_state, performed_action) << endl;
+    if(debug) cout << "prev value\n" << Q_table << endl;
+    Q_table(prev_state, performed_action) += alpha * (reward + gamma * max - Q_table(prev_state, performed_action));
+    if(debug) cout << "update value\n" << Q_table << endl;
 
 }
 
@@ -391,7 +483,6 @@ vector<tuple<int, int, int> > ludo_player_qlearning::player_state_actionInterpre
             else
                 actions.push_back(13);
 
-            cout << "Action size: " << actions.size();
             // done with all the state_actions
             for(int j = 0; j < actions.size(); j++)
             {
@@ -400,11 +491,7 @@ vector<tuple<int, int, int> > ludo_player_qlearning::player_state_actionInterpre
             }
         }
     }
-    for ( const auto& i : output ) {
-      cout << " with action output: " << get<0>(i) << " " << get<1>(i) << " " << get<2>(i) << endl;
-    }
     return output;
-
 }
 
 tuple<int, int, int, int> ludo_player_qlearning::e_greedy(double eps)
@@ -426,52 +513,63 @@ tuple<int, int, int, int> ludo_player_qlearning::e_greedy(double eps)
         mt19937 player_mt(player_rand());
         uniform_int_distribution<int> dist_p(first_p, last_p); //play with this
 
-        int player = dist_p(player_mt); //choose the player here!
+        int player = dist_p(player_mt); //choose a random player here!
         player_played = player;
         int prev_pos = player_pos_start_of_turn[player_played];
     //figure out what this does!!
         auto it = find_if(player_state_action.begin(), player_state_action.end(), [](const tuple<int, int, int>& e) {return get<0>(e)  == 0;});
         int pos = distance(player_state_action.begin(), it); //find distance between first element and itterator
-        if(debug) cout << "Position: " << pos << endl;
+        if(debug) cout << "Position in random e_greedy: " << pos << endl;
         int state = get<1>(player_state_action[pos]);
         int action = get<2>(player_state_action[pos]);
 
-//        cout << "TEST:" << endl;
-//        for(unsigned int i = 0; i < player_state_action.size(); i++)
-//        {
-//            int player = get<0>(player_state_action[i]);
-//            int state = get<1>(player_state_action[i]);
-//            int action = get<2>(player_state_action[i]);
-
-//            double test = Q_table(state, action);
-//            cout << test << " ";
-//        }
-        if(debug) cout << endl;
-        if(debug) cout << "Player: " << player << " state: " << state << " action: " << action << endl;
-        update_flag = 1;
-
-        return make_tuple(player, state, action, prev_pos);
-    }
-    else
-    {
-        double max = -1000000000;
-        int pos;
-        for(int i = 0; i < player_state_action.size(); i++)
+        for(unsigned int i = 0; i < player_state_action.size(); i++)
         {
             int player = get<0>(player_state_action[i]);
             int state = get<1>(player_state_action[i]);
             int action = get<2>(player_state_action[i]);
 
             double test = Q_table(state, action);
-            if(debug) cout << "test: " << test;
-            if(test > max)
+            if(debug) cout << test << " ";
+        }
+        if(debug) cout << endl;
+        if(debug) cout << "Random player: " << player << " state: " << state << " action: " << action << endl;
+
+        return make_tuple(player, state, action, prev_pos);
+    }
+    else
+    {
+        double max = -1000000000000000000000;
+        int pos;
+        float cout_gain = 0;
+        for(int i = 0; i < player_state_action.size(); i++)
+        {
+//            if(player_pos_start_of_turn[i] >= 99)
+//                continue;
+            float curr_pos_gain = (player_pos_start_of_turn[i] + 2);
+            curr_pos_gain = (curr_pos_gain / 58)+1; //creates a gain between 1 and 2 so it prioritizes further ahead pieces
+
+            int player = get<0>(player_state_action[i]);
+            int state = get<1>(player_state_action[i]);
+            int action = get<2>(player_state_action[i]);
+
+            if(debug) cout << "Player: " << player << " in state " << state << " can do " << action << " with diceroll: " << dice_roll << endl; //The correct is chosen
+            double test = Q_table(state, action);
+            if(debug) cout << "testing for qtable value: " << test << endl;
+//            cout << "Gain: " << curr_pos_gain << endl;
+//            cout << "Player: " << player << " before gain: " << test << endl;
+            test = test * curr_pos_gain;
+//            cout << "Player: " << player << " after gain : " << test << endl << endl;
+            if(test > (max * curr_pos_gain))
             {
+//                cout << "test: " << test << " max: " << (max ) << endl;
                 max = test;
                 pos = i;
                 player_played = player;
+                cout_gain = curr_pos_gain;
             }
-            if(debug) cout << endl;
         }
+//        cout << "And player " << player_played << " is choosen with " << cout_gain << " gain \n\n";//The correct is chosen
         int prev_pos = player_pos_start_of_turn[player_played];
         int state = get<1>(player_state_action[pos]);
         int action = get<2>(player_state_action[pos]);
@@ -486,7 +584,9 @@ int ludo_player_qlearning::make_q_decision()
     if(debug) cout << "***** New decision *****" << endl << endl;
 
     if(update_flag != 1)
+    {
         if(debug) cout << "No update...\n";
+    }
     else
     {
         if(debug) cout << "Update!!!" << endl;
@@ -514,14 +614,14 @@ int ludo_player_qlearning::make_q_decision()
             calc_possible_actions(action_input, player_pos_start_of_turn[i], dice_roll, i);
             calc_curr_state(state_input, player_pos_start_of_turn[i], i);
 
-            if(debug) cout << "Possible actions: ";
+            if(make_q_decision_debug) cout << "Possible actions: ";
             for(int i = 0; i < (sizeof(action_input)/sizeof(float)); i++)
-                if(debug) cout << action_input[i] << " ";
-            if(debug) cout << endl;
-            if(debug) cout << "Curr state: ";
+                if(make_q_decision_debug) cout << action_input[i] << " ";
+            if(make_q_decision_debug) cout << endl;
+            if(make_q_decision_debug) cout << "Curr state: ";
             for(int i = 0; i < (sizeof(state_input)/sizeof(float)); i++)
-                if(debug) cout << state_input[i] << " ";
-            if(debug) cout << endl;
+                if(make_q_decision_debug) cout << state_input[i] << " ";
+            if(make_q_decision_debug) cout << endl;
 
             vector<tuple<int, int, int>> player_i = player_state_actionInterpreter(state_input, action_input, i);
             player_state_action.insert(player_state_action.end(), player_i.begin(), player_i.end());
@@ -529,15 +629,17 @@ int ludo_player_qlearning::make_q_decision()
         else
             if(debug) cout << "Player: " << i << " is already in goal \n";
     }
-    update_flag = 0;
+//    if(game_obj.get_update_q_table())
+//        update_flag = 1;
     if(player_state_action.size() > 4)
     {
-        if(debug) cout << "More actions than allowed, with: " << player_state_action.size() << "\n";
+        cout << "More actions than allowed, with: " << player_state_action.size() << "\n";
         exit(0);
     }
 
-    player_state_action_prevPos = e_greedy(1); //0 = greedy, 1 = random
+    player_state_action_prevPos = e_greedy(epsilon); //0 = greedy, 1 = random
 
+    if(reward_debug) cout << "Player played: " << player_played << endl;
     if(debug) cout << "egreedy is done" << endl;
     return player_played; //gets from e_greedy algorithm
 }
@@ -585,6 +687,12 @@ void ludo_player_qlearning::post_game_analysis(std::vector<int> relative_pos){
         if(player_pos_end_of_turn[i] < 99){
             game_complete = false;
         }
+    }
+    updateCnt++;
+    if(updateCnt >= 400)
+    {
+        updateCnt = 0;
+        update_flag = 1;
     }
     emit turn_complete(game_complete);
 }

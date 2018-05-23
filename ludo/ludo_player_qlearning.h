@@ -41,13 +41,18 @@ private:
     bool update_flag;
     bool debug = 0;
     bool a_debug = 0;
+    bool make_q_decision_debug = 0;
+    bool reward_debug = 0;
+//    game game_obj;
     int player_played;
     int dice_roll;
+    int updateCnt = 0;
     int cum_rew_p0;
     int cum_rew_p1;
     int cum_rew_p2;
     int cum_rew_p3;
     double acc = 0;
+    double alpha, gamma, epsilon;
     float numeric_min = numeric_limits<float>::min();
 signals:
     void select_piece(int);

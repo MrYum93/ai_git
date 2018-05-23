@@ -32,5 +32,8 @@
 # Build folders
 build/
 
+# Other folders
+notludo/
+
 # QT Generated Files
 *.user

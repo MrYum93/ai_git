@@ -27,11 +27,11 @@ int main(int argc, char *argv[]){
     if(debug) cout << "Pointers to players created" << endl;
 
     game g;
-    g.setGameDelay(0030); //if you want to see the game, set a delay
+    g.setGameDelay(000); //if you want to see the game, set a delay
     if(debug) cout << "Game start" << endl;
 
 
-    //Add a GUI <-- remove the '/' to uncomment block
+    /*//Add a GUI <-- remove the '/' to uncomment block
     Dialog w;
     QObject::connect(&g,SIGNAL(update_graphics(std::vector<int>)),&w,SLOT(update_graphics(std::vector<int>)));
     QObject::connect(&g,SIGNAL(set_color(int)),                   &w,SLOT(get_color(int)));
