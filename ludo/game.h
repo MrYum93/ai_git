@@ -9,9 +9,12 @@
 #include <QObject>
 #include <QApplication>
 #include <a.out.h>
+#include <numeric>
 
 #include "ludo_player_random.h"
+#include "ludo_player.h"
 #include "ludo_player_qlearning.h"
+#include "ludo_player_q.h"
 #include "positions_and_dice.h"
 
 // static int global_color = 5;
@@ -41,17 +44,29 @@ private:
             QThread::msleep(msecs);
         }
     }
+    void write_vector_to_file(const std::vector<double>& myVector,std::string filename);
 
     bool firstInit = false;
     bool gameTrainFlag = false;
     bool gameFlag = false;
     int winCnt1, winCnt2, winCnt3, winCnt4;
+    int outWinCnt = 0;
     int totalWinCnt = 0;
+    int statCnt = 0;
+    int plotTimeLine = 0;
+    vector<double> tmpMeanVec1, tmpMeanVec2, tmpMeanVec3, tmpMeanVec4;
+    vector<double> tmpStdVec1, tmpStdVec2, tmpStdVec3, tmpStdVec4;
+    vector<double> meanVector1, meanVector2, meanVector3, meanVector4;
+    vector<double> stdVector1, stdVector2, stdVector3, stdVector4;
     ludo_player_qlearning *pp1;
-    ludo_player_random *pp2, *pp3, *pp4;
+//    ludo_player_q *pp2;
+    ludo_player_random *pp2;
+    ludo_player_random *pp3, *pp4;
     QApplication *anApplication;
+    int timesToPlay = 100;
 public:
     void add_players(ludo_player_qlearning *p1, ludo_player_random *p2, ludo_player_random *p3, ludo_player_random *p4);
+//    void add_players(ludo_player_qlearning *p1, ludo_player_q *p2, ludo_player_random *p3, ludo_player_random *p4);
     void runUserDef(QApplication *gameObject);
     int color;
     std::vector<int> player_positions;

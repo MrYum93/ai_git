@@ -195,14 +195,6 @@ void game::move_start(int fixed_piece){
     }
 }
 
-void game::add_players(ludo_player_qlearning *p1, ludo_player_random *p2, ludo_player_random *p3, ludo_player_random *p4)
-{
-    pp1 = p1;
-    pp2 = p2;
-    pp3 = p3;
-    pp4 = p4;
-}
-
 void game::runUserDef(QApplication *gameObject)
 {
     anApplication = gameObject;
@@ -363,6 +355,22 @@ std::vector<int> game::relativePosition(){
     return std::move(relative_positions);
 }
 
+void game::add_players(ludo_player_qlearning *p1, ludo_player_random *p2, ludo_player_random *p3, ludo_player_random *p4)
+{
+    pp1 = p1;
+    pp2 = p2;
+    pp3 = p3;
+    pp4 = p4;
+}
+
+//void game::add_players(ludo_player_qlearning *p1, ludo_player *p2, ludo_player_q *p3, ludo_player_random *p4)
+//{
+//    pp1 = p1;
+//    pp2 = p2;
+//    pp3 = p3;
+//    pp4 = p4;
+//}
+
 void game::turnComplete(bool win){
     game_complete = win;
     turn_complete = true;
@@ -383,16 +391,98 @@ void game::turnComplete(bool win){
             break;
         }
         totalWinCnt++;
-        if (totalWinCnt == 1000 && gameFlag == true)
+        outWinCnt++;
+        if (outWinCnt == timesToPlay && gameFlag == true)
         {
-            std::cout << "Player 1 has won: " << winCnt1 << " times with a winrate of: " << (float)winCnt1/(float)totalWinCnt << endl;
-            std::cout << "Player 2 has won: " << winCnt2 << " times with a winrate of: " << (float)winCnt2/(float)totalWinCnt << endl;
-            std::cout << "Player 3 has won: " << winCnt3 << " times with a winrate of: " << (float)winCnt3/(float)totalWinCnt << endl;
-            std::cout << "Player 4 has won: " << winCnt4 << " times with a winrate of: " << (float)winCnt4/(float)totalWinCnt << endl;
-            std::cout << "Total games: " << totalWinCnt << "\n\n";
+            std::cout << "\nPlayer 1 has won: " << winCnt1 << " times with a winrate of: " << (float)winCnt1/(float)outWinCnt << endl;
+            std::cout << "Player 2 has won: " << winCnt2 << " times with a winrate of: " << (float)winCnt2/(float)outWinCnt << endl;
+            std::cout << "Player 3 has won: " << winCnt3 << " times with a winrate of: " << (float)winCnt3/(float)outWinCnt << endl;
+            std::cout << "Player 4 has won: " << winCnt4 << " times with a winrate of: " << (float)winCnt4/(float)outWinCnt << endl;
+            std::cout << "Total games: " << totalWinCnt << "\n";
+
+            double percent_win1 = (float)winCnt1/(float)outWinCnt * 100;
+            double percent_win2 = (float)winCnt2/(float)outWinCnt * 100;
+            double percent_win3 = (float)winCnt3/(float)outWinCnt * 100;
+            double percent_win4 = (float)winCnt4/(float)outWinCnt * 100;
+
+            tmpMeanVec1.push_back(percent_win1);
+            tmpMeanVec2.push_back(percent_win2);
+            tmpMeanVec3.push_back(percent_win3);
+            tmpMeanVec4.push_back(percent_win4);
+            statCnt++;
+
             resetCnt();
         }
+        if(statCnt == 5)
+        {
+            plotTimeLine++;
 
+            double sum1 = std::accumulate(tmpMeanVec1.begin(), tmpMeanVec1.end(), 0.0);
+            double mean1 = sum1 / tmpMeanVec1.size();
+            double sum2 = std::accumulate(tmpMeanVec2.begin(), tmpMeanVec2.end(), 0.0);
+            double mean2 = sum2 / tmpMeanVec2.size();
+            double sum3 = std::accumulate(tmpMeanVec3.begin(), tmpMeanVec3.end(), 0.0);
+            double mean3 = sum3 / tmpMeanVec3.size();
+            double sum4 = std::accumulate(tmpMeanVec4.begin(), tmpMeanVec4.end(), 0.0);
+            double mean4 = sum4 / tmpMeanVec4.size();
+
+            double sq_sum1 = std::inner_product(tmpMeanVec1.begin(), tmpMeanVec1.end(), tmpMeanVec1.begin(), 0.0);
+            double stdev1 = std::sqrt(sq_sum1 / tmpMeanVec1.size() - mean1 * mean1);
+            double sq_sum2 = std::inner_product(tmpMeanVec2.begin(), tmpMeanVec2.end(), tmpMeanVec2.begin(), 0.0);
+            double stdev2 = std::sqrt(sq_sum2 / tmpMeanVec2.size() - mean2 * mean2);
+            double sq_sum3 = std::inner_product(tmpMeanVec3.begin(), tmpMeanVec3.end(), tmpMeanVec3.begin(), 0.0);
+            double stdev3 = std::sqrt(sq_sum3 / tmpMeanVec3.size() - mean3 * mean3);
+            double sq_sum4 = std::inner_product(tmpMeanVec4.begin(), tmpMeanVec4.end(), tmpMeanVec4.begin(), 0.0);
+            double stdev4 = std::sqrt(sq_sum4 / tmpMeanVec4.size() - mean4 * mean4);
+
+            tmpMeanVec1.clear();
+            tmpMeanVec2.clear();
+            tmpMeanVec3.clear();
+            tmpMeanVec4.clear();
+
+            meanVector1.push_back(mean1);
+            stdVector1.push_back(stdev1);
+            meanVector2.push_back(mean2);
+            stdVector2.push_back(stdev2);
+            meanVector3.push_back(mean3);
+            stdVector3.push_back(stdev3);
+            meanVector4.push_back(mean4);
+            stdVector4.push_back(stdev4);
+
+            statCnt = 0;
+        }
+        if(totalWinCnt == timesToPlay*5)
+        {
+            ofstream stat("stat.txt");
+//            ofstream stat1("stat1.txt");
+//            ofstream stat2("stat2.txt");
+//            ofstream stat3("stat3.txt");
+//            ofstream stat4("stat4.txt");
+            for(int i = 0; i <  meanVector1.size(); i++)
+            {
+//                cout << "Mean vecotr i: " << meanVector1[i]<< " ";
+//                stat1 << i+1 << " " << meanVector1[i] << " " << stdVector1[i] << endl;
+//                stat2 << i+1 << " " << meanVector2[i] << " " << stdVector2[i] << endl;
+//                stat3 << i+1 << " " << meanVector3[i] << " " << stdVector3[i] << endl;
+//                stat4 << i+1 << " " << meanVector4[i] << " " << stdVector4[i] << endl;
+                stat << i+1 << " " << meanVector1[i] << " " << stdVector1[i] << " ";
+                stat << meanVector2[i] << " " << stdVector2[i] << " ";
+                stat << meanVector3[i] << " " << stdVector3[i] << " ";
+                stat << meanVector4[i] << " " << stdVector4[i] << endl;
+
+            }
+//            cout << endl;
+//            for(int i = 0; i < stdVector1.size(); i++)
+//            {
+//                cout << "std vecotr i: " << stdVector1[i]<< " ";
+//                stat << stdVector1[i] << " ";
+//            }
+//            cout << endl;
+        }
+//        if(totalWinCnt == timesToPlay*10)
+//        {
+//            write_vector_to_file(meanVector1, "stat.txt");
+//        }
         emit declare_winner(color);
     }
 }
@@ -400,12 +490,12 @@ void game::turnComplete(bool win){
 void game::resetCnt()
 {
     winCnt1 = winCnt2 = winCnt3 = winCnt4 = 0;
-    totalWinCnt = 0;
+    outWinCnt = 0;
 }
 
 void game::run()
 {
-    for(int i = 0; i < 4000; i++)
+    for(int i = 0; i < timesToPlay*10; i++)
     {
         start();
         while(!game_complete)
@@ -422,6 +512,13 @@ void game::run()
     emit close();
     QThread::exit();
     if(debug) cout << "Exiting" << endl;
+}
+
+void game::write_vector_to_file(const std::vector<double>& myVector,std::string filename)
+{
+    std::ofstream ofs(filename,std::ios::out | std::ofstream::binary);
+    std::ostream_iterator<char> osi{ofs};
+    std::copy(myVector.begin(),myVector.end(),osi);
 }
 
 //void game::run() {

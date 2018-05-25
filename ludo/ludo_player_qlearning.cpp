@@ -141,13 +141,11 @@ void ludo_player_qlearning::updateQtable(tuple<int, int, int, int> player_state_
         if(debug) cout << "Piece has not moved" << endl;
         reward -= -0.3;
     }
-
     if(curr_pos == 99 && prev_pos != curr_pos)
     {
         if(debug) cout << "Goal reached\n";
         reward += 10; //99
     }
-
     if(curr_pos == 0 && prev_pos == -1 && performed_action == 2)
     {
         if(debug) cout << "You moved out from home... Yay!\n";

@@ -5,6 +5,7 @@
 #include "ludo_player.h"
 #include "ludo_player_random.h"
 #include "ludo_player_qlearning.h"
+#include "ludo_player_q.h"
 #include "positions_and_dice.h"
 
 Q_DECLARE_METATYPE( positions_and_dice )
@@ -15,13 +16,16 @@ int main(int argc, char *argv[]){
     qRegisterMetaType<positions_and_dice>();
 
     //instanciate the players here
-    //ludo_player p1, p2;
     ludo_player_qlearning p1;
-    if(debug) cout << "ludo player created"<< endl;
-    ludo_player_random p2, p3, p4;
-    if(debug) cout << "all players created" << endl;
+//    ludo_player_q p2;
+    ludo_player_random p2;
+    ludo_player_random p3, p4;
+
     ludo_player_qlearning * p1Ptr = &p1;
+//    ludo_player_q         * p2Ptr = &p2;
+//    ludo_player           * p3Ptr = &p3;
     ludo_player_random    * p2Ptr = &p2;
+//    ludo_player_random    * p4Ptr = &p4;
     ludo_player_random    * p3Ptr = &p3;
     ludo_player_random    * p4Ptr = &p4;
     if(debug) cout << "Pointers to players created" << endl;
